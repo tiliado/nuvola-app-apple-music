@@ -1,0 +1,13 @@
+Makefile
+metadata.json
+icons
+/screenshots/
+nuvola-app-apple-music
+eu.tiliado.NuvolaAppAppleMusic.desktop
+eu.tiliado.NuvolaAppAppleMusic.service
+eu.tiliado.NuvolaAppAppleMusic.appdata.xml
+nuvola-app-apple-music.metainfo.xml
+eu.tiliado.WebRuntimeAppAppleMusic.desktop
+eu.tiliado.WebRuntimeAppAppleMusic.service
+eu.tiliado.WebRuntimeAppAppleMusic.appdata.xml
+nuvola-app-apple-music.metainfo.xml
