@@ -58,16 +58,66 @@
 
   // Extract data from the web page
   WebApp.update = function () {
+    var elms = this._getElements()
     var track = {
-      title: null,
+      title: Nuvola.queryText('.web-chrome-playback-lcd__song-name-scroll-inner-text-wrapper'),
       artist: null,
       album: null,
       artLocation: null,
-      rating: null
+      rating: null,
+      length: elms.progressbar ? elms.progressbar.getAttribute('aria-valuemax') * 1000000 : null
     }
 
+    if (elms.chrome) {
+      var subtitle = elms.chrome.querySelectorAll('.web-chrome-playback-lcd__sub-copy-scroll-inner-text-wrapper a')
+      if (!subtitle.length) {
+        subtitle = elms.chrome.querySelectorAll('.web-chrome-playback-lcd__sub-copy-scroll-inner-text-wrapper span')
+      }
+      if (subtitle.length === 2) {
+        track.artist = subtitle[0].textContent.trim()
+        track.album = subtitle[1].textContent.trim()
+      }
+      track.artLocation = Nuvola.queryAttribute('div.web-chrome img.media-artwork-v2__image', 'srcset', (src) => {
+        if (!src) {
+          return null
+        }
+
+        var imgs = src.split(',')
+        if (!imgs.length) {
+          return null
+        }
+
+        src = imgs.pop().trim().split(' ')[0].trim()
+        return src ? src.replace('/88x88', '/300x300') : null
+      })
+    }
+
+    var state
+    if (!elms.chrome || (!elms.play && !elms.pause)) {
+      state = PlaybackState.UNKNOWN
+    } else if (elms.chrome.classList.contains('is-playing')) {
+      state = PlaybackState.PLAYING
+    } else {
+      state = PlaybackState.PAUSED
+    }
+    player.setPlaybackState(state)
+
     player.setTrack(track)
-    player.setPlaybackState(PlaybackState.UNKNOWN)
+    player.setPlaybackState(state)
+
+    player.setCanGoPrev(!!elms.prev)
+    player.setCanGoNext(!!elms.next)
+    player.setCanPlay(!!elms.play)
+    player.setCanPause(!!elms.pause)
+
+    var shuffle = elms.shuffle ? elms.shuffle.getAttribute('aria-checked') === 'true' : null
+    player.setCanShuffle(shuffle !== null)
+    player.setShuffleState(shuffle)
+
+    player.setTrackPosition(elms.progressbar ? elms.progressbar.getAttribute('aria-valuenow') * 1000000 : null)
+    player.setCanSeek(state !== PlaybackState.UNKNOWN && elms.progressbar)
+    player.updateVolume(elms.volumebar ? elms.volumebar.value * 1 : null)
+    player.setCanChangeVolume(!!elms.volumebar)
 
     // Schedule the next update
     setTimeout(this.update.bind(this), 500)
@@ -75,10 +125,82 @@
 
   // Handler of playback actions
   WebApp._onActionActivated = function (emitter, name, param) {
+    var elms = this._getElements()
     switch (name) {
-      case PlayerAction.Play:
+      case PlayerAction.TOGGLE_PLAY:
+        if (elms.play) {
+          Nuvola.clickOnElement(elms.play)
+        } else {
+          Nuvola.clickOnElement(elms.pause)
+        }
+        break
+      case PlayerAction.PLAY:
+        Nuvola.clickOnElement(elms.play)
+        break
+      case PlayerAction.PAUSE:
+      case PlayerAction.STOP:
+        Nuvola.clickOnElement(elms.pause)
+        break
+      case PlayerAction.PREV_SONG:
+        Nuvola.clickOnElement(elms.prev)
+        break
+      case PlayerAction.NEXT_SONG:
+        Nuvola.clickOnElement(elms.next)
+        break
+      case PlayerAction.SEEK:
+        Nuvola.setInputValueWithEvent(elms.progressbar, Math.round(param / 1000000))
+        break
+      case PlayerAction.CHANGE_VOLUME:
+        Nuvola.setInputValueWithEvent(elms.volumebar, param)
+        break
+      case PlayerAction.SHUFFLE:
+        Nuvola.clickOnElement(elms.shuffle)
         break
     }
+  }
+
+  WebApp._getElements = function () {
+  // Interesting elements
+    var elms = {
+      chrome: document.querySelector('div.web-chrome'),
+      play: null,
+      pause: null,
+      next: null,
+      prev: null,
+      repeat: document.getElementById('repeat'),
+      shuffle: document.getElementById('shuffle'),
+      progressbar: document.querySelector('div.web-chrome .web-chrome-playback-lcd__progress-bar-container input'),
+      volumebar: document.querySelector('div.web-chrome .web-chrome-playback-lcd__volume input')
+    }
+
+    // Prev, play/pause, next
+    var buttons = document.querySelectorAll('.web-chrome-playback-controls__main button')
+    if (buttons.length === 3) {
+      elms.prev = buttons[0]
+      elms.next = buttons[2]
+      if (elms.chrome && elms.chrome.classList.contains('is-playing')) {
+        elms.pause = buttons[1]
+      } else {
+        elms.play = buttons[1]
+      }
+    }
+
+    // Shuffle, repeat
+    var checkboxes = document.querySelectorAll('.web-chrome-playback-controls__directionals div[role="checkbox"]')
+    if (checkboxes.length === 2) {
+      elms.shuffle = checkboxes[0]
+      elms.repeat = checkboxes[1]
+    }
+
+    // Ignore disabled buttons
+    for (var key in elms) {
+      if (elms[key] && elms[key].disabled) {
+      // console.log("disabled " + key)
+        elms[key] = null
+      }
+    }
+
+    return elms
   }
 
   WebApp.start()
