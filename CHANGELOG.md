@@ -1,6 +1,9 @@
 Apple Music Change Log
 ======================
 
+1.2 - May 9th, 2021
+-------------------
+
  * Apple Music is deprecated until Nuvola Player upgrades its web engine. Issue: tiliado/nuvolaplayer#730
 
 1.1 - April 11th, 2021
