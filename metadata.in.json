@@ -10,6 +10,7 @@
   "api_minor": 17,
   "categories": "AudioVideo;Audio;",
   "requirements": "Chromium[65] Codec[MP3] Feature[MSE]",
+  "deprecation_url": "https://github.com/tiliado/nuvolaplayer/issues/730",
   "license": "BSD-2-Clause; CC-BY-SA-3.0",
   "build": {
     "icons": [
